@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="img">
+    <file>noimage.png</file>
+    <file>road.jfif</file>
+  </qresource>
+</RCC>
