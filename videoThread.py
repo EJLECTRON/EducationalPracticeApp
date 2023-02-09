@@ -21,8 +21,6 @@ class VideoThread(QThread):
         while self.run_flag:
             self.ret, self.frame = cap.read()
 
-            print(type(self.frame))
-
             if not self.imageProcessing.imageProcessingThread.is_alive():
                 try:
                     self.imageProcessing.imageProcessingThread.start()

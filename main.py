@@ -55,7 +55,7 @@ class MainWindow(QMainWindow):
         self.__comboBoxActions()
 
     def __createImageProcessingProcess(self):
-        self.imageProcessing = ImageProcessing()
+        self.imageProcessing = FrameProcessing()
 
     def __buttonsActions(self):
         self.ui.manualPushButton.clicked.connect(self.__manualControlling)
