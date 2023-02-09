@@ -1,7 +1,8 @@
 from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QMainWindow, QApplication
-import sys
+from sys import argv, exit
+
 
 from ui_mainInterface import Ui_MainWindow
 from videoThread import *
@@ -38,9 +39,52 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
-        self.__selectCamera(0)
-
         self.__functionallyInitialization()
+
+        self.__selectCamera(self.cameraIndex)
+
+    def __functionallyInitialization(self):
+        #TODO: place it somewhere
+        self.isTypeOfSignalAutomatic = True
+        self.isLightOn = True
+        self.cameraIndex = 1
+
+        self.__createImageProcessingProcess()
+        self.__labelsActions()
+        self.__buttonsActions()
+        self.__comboBoxActions()
+
+    def __createImageProcessingProcess(self):
+        self.imageProcessing = ImageProcessing()
+
+    def __buttonsActions(self):
+        self.ui.manualPushButton.clicked.connect(self.__manualControlling)
+        self.ui.autoPushButton.clicked.connect(self.__automaticControlling)
+        self.ui.typeSignalPushButton.clicked.connect(self.changeTypeSignal)
+        self.ui.areaPushButton.clicked.connect(self.__switchCamera)
+
+    def __comboBoxActions(self):
+        self.ui.typeSignalComboBox.addItem("Ввімнути світло")
+        self.ui.typeSignalComboBox.addItem("Вимкнути світло")
+
+        numOfCameras = numOfPorts()
+
+        for counter in range(numOfCameras):
+            self.ui.areaComboBox.addItem("Камера {0}".format(counter + 1))
+
+    def __labelsActions(self):
+        pass
+
+    def __selectCamera(self, index):
+        # resize cameraLabel to needed size of video image
+        self.ui.cameraLabel.resize(self.camera_width, self.camera_height)
+
+        # create the video capture thread
+        self.thread = VideoThread(index, self.imageProcessing)
+        # connect its signal to the update_image slot
+        self.thread.change_pixmap_signal.connect(self.update_image)
+        # start the thread
+        self.thread.start()
 
     @pyqtSlot(np.ndarray)
     def update_image(self, frame):
@@ -61,44 +105,10 @@ class MainWindow(QMainWindow):
 
         return QPixmap.fromImage(scaled)
 
-    def __selectCamera(self, index):
-        # resize cameraLabel to needed size of video image
-        self.ui.cameraLabel.resize(self.camera_width, self.camera_height)
 
-        # create the video capture thread
-        self.thread = VideoThread(index)
-        # connect its signal to the update_image slot
-        self.thread.change_pixmap_signal.connect(self.update_image)
-        # start the thread
-        self.thread.start()
 
-    def __functionallyInitialization(self):
-        #TODO: place it somewhere
-        self.isTypeOfSignalAutomatic = True
-        self.isLightOn = True
-        self.cameraIndex = 0
 
-        self.__labelsActions()
-        self.__buttonsActions()
-        self.__comboBoxActions()
 
-    def __buttonsActions(self):
-        self.ui.manualPushButton.clicked.connect(self.__manualControlling)
-        self.ui.autoPushButton.clicked.connect(self.__automaticControlling)
-        self.ui.typeSignalPushButton.clicked.connect(self.changeTypeSignal)
-        self.ui.areaPushButton.clicked.connect(self.__switchCamera)
-
-    def __comboBoxActions(self):
-        self.ui.typeSignalComboBox.addItem("Ввімнути світло")
-        self.ui.typeSignalComboBox.addItem("Вимкнути світло")
-
-        numOfCameras = numOfPorts()
-
-        for counter in range(numOfCameras):
-            self.ui.areaComboBox.addItem("Камера {0}".format(counter + 1))
-
-    def __labelsActions(self):
-        pass
 #----------------button actions---------------
     def changeTypeSignal(self):
         match self.ui.typeSignalComboBox.currentIndex():
@@ -149,9 +159,9 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
+    app = QApplication(argv)
 
     mainWindow = MainWindow()
     mainWindow.show()
 
-    sys.exit(app.exec_())
+    exit(app.exec_())
