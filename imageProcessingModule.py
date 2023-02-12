@@ -1,14 +1,7 @@
 import cv2
+import numpy
 import numpy as np
 from matplotlib import pyplot as plt
-from threading import Thread
-
-#TODO: process of calculating brightness:
-#---calculate normal distribution
-#---find local maximums
-#---calculate defined integrals in local maximums neighbourhood
-#---take value of local maximum that have biggest value of integral
-
 
 class FrameProcessing:
     def __init__(self):
@@ -19,7 +12,13 @@ class FrameProcessing:
         
         brightness = self.croppingImgAndCalculateBrightness(changedFrame, 4)
 
-        print(brightness)
+        brightness_1 = self.calculateBrightnessUsingDistribution(frame)
+
+        brightness_1 = self.__normalDistribution(brightness_1, np.mean(brightness_1), np.std(brightness_1))
+
+        print(str(brightness) + "---------" + str(np.mean(brightness_1)))
+
+        return [brightness, np.mean(brightness_1)]
         
 
     def resume(self):
@@ -29,15 +28,13 @@ class FrameProcessing:
         pass
 
     def changeFrame(self, frame):
-        """
-        hsvImg = cv2.cvtColor(frame, cv2.COLOR_RGB2HLS)
+        hsvImg = cv2.cvtColor(frame, cv2.COLOR_RGB2HSV)
 
         blurred = cv2.GaussianBlur(hsvImg, (9, 9), 0)
 
         thresh = cv2.threshold(blurred, 80, 255, cv2.THRESH_BINARY)[1]
 
         thresh = cv2.flip(thresh, 1)
-        """
 
         return frame
 
@@ -57,12 +54,17 @@ class FrameProcessing:
                     tempFrame = frame[y:y + deltaY, x:width]
                 else:
                     tempFrame = frame[y:y+deltaY, x:x+deltaX]
-                
+
                 brightness += self.__calculateFrameBrightness(tempFrame)
 
         return brightness / pow(divider, 2)
 
-    def __normalDistribution(x, mean, sd):
+    def calculateBrightnessUsingDistribution(self, frame):
+        h, s, v = cv2.split(frame)
+
+        return v
+
+    def __normalDistribution(self, x, mean, sd):
         prob_density = (np.pi * sd) * np.exp(-0.5 * ((x - mean) / sd) ** 2)
         return prob_density
                 
@@ -79,7 +81,11 @@ if __name__ == "__main__":
     
     frameProcessing = FrameProcessing()
 
-    while True:
+    croppingData = np.array([])
+    distributionData = np.array([])
+
+    for i in range(350):
+
         ret, frame = camera.read()
 
         cv2.imshow('frame', frame)
@@ -87,5 +93,26 @@ if __name__ == "__main__":
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        frameProcessing.figureOutDayOrNight(frame)
+        brightness = frameProcessing.figureOutDayOrNight(frame)
+
+        croppingData = numpy.append(croppingData, brightness[0])
+        distributionData = numpy.append(distributionData, brightness[1])
+
+    if len(croppingData) == len(distributionData):
+        x = list(range(len(croppingData)))
+
+        plt.plot(x, croppingData)
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title("Cropping data")
+        plt.show()
+
+        plt.plot(x, distributionData)
+        plt.xlabel('X-axis')
+        plt.ylabel('Y-axis')
+        plt.title("Distribution data")
+        plt.show()
+
+
+
 
