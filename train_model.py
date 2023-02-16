@@ -5,18 +5,18 @@ from scipy.special import expit
 
 def load_images_from_folder(folder):
     images = []
-    print("Training data is loading, please wait...")
+    print("Data is loading, please wait...")
     for filename in os.listdir(folder):
         img = cv2.imread(os.path.join(folder,filename))
         if img is not None:
-            img = cv2.resize(img, (128, 128))
+            img = cv2.resize(img, (256, 256))
 
             if "day" in filename:
                 images.append((img, 0))
             elif "night" in filename:
                 images.append((img, 1))
 
-    print("Training data has loaded!")
+    print("Data has loaded!")
     return images
 
 class NeuralNetwork:
@@ -76,62 +76,81 @@ class NeuralNetwork:
         return final_outputs
 
 if __name__ == "__main__":
-    input_nodes = 128
-    hidden_nodes = 50
+    input_nodes = 256
+    hidden_nodes = 70
     output_nodes = 2
-
-    learning_rate = 0.3
-
-    nn = NeuralNetwork(input_nodes, hidden_nodes, output_nodes, learning_rate)
 
     training_data_list = load_images_from_folder("K:\\Programming\\educational practice\\images\\training_data")
 
-    img, flag = training_data_list[0]
-
-    hsvImg = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
-
-    h, s, v = cv2.split(img)
-
-    inputs = v / 255.0 * 0.99 + 0.01
-
-    targets = np.zeros(output_nodes) + 0.01
-
-    targets[flag] = 0.99
-
-    print("Start of training...")
-
-    nn.train(inputs, targets)
-
-    print("End of training!")
-
-    print("Start of testing ^_^")
-
     folder = "K:\\Programming\\educational practice\\images\\test_data"
-    filename = "night_image (2974).jpg"
 
-    img = cv2.imread(os.path.join(folder, filename))
+    test_data_list = load_images_from_folder(folder)
 
-    target = []
+    data_of_efficiency = []
 
-    if img is not None:
-        img = cv2.resize(img, (128, 128))
+    #0.1 better
+    for learning_rate in range(1, 10, 2):
+        learning_rate /= 10
 
-        if "day" in filename:
-            target = [img, 0]
-        elif "night" in filename:
-            target = [img, 1]
+        epochs = 1
 
-    hsvImg = cv2.cvtColor(target[0], cv2.COLOR_RGB2HSV)
+        temp_data_of_efficiency = []
 
-    h, s, v = cv2.split(target[0])
+        while (epochs <= 1):
+            nn = NeuralNetwork(input_nodes, hidden_nodes, output_nodes, learning_rate)
 
-    inputs = v / 255.0 * 0.99 + 0.01
+            print("Start of training...")
 
-    outputs = nn.query(inputs)
+            for e in range(epochs):
+                for data in training_data_list:
+                    img, flag = data[0], data[1]
 
-    label = np.argmax(outputs)
+                    hsvImg = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
 
-    if label == target[1]:
-        print("(👍 ͡❛ ‿●‿ ͡❛)👍")
+                    v = hsvImg[: , :, 2]
 
-    print("End of testing ^_^")
+                    inputs = v / 255.0 * 0.99 + 0.01
+
+                    targets = np.zeros(output_nodes) + 0.01
+
+                    targets[flag] = 0.99
+
+                    nn.train(inputs, targets)
+
+            print("End of training!")
+
+            print("Start of testing ^_^")
+
+            score_list = []
+
+            for data in test_data_list:
+                img, correct_value = data[0], data[1]
+
+                hsvImg = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)
+
+                v = hsvImg[: , :, 2]
+
+                inputs = v / 255.0 * 0.99 + 0.01
+
+                outputs = nn.query(inputs)
+
+                value = np.argmax(outputs)
+
+                if value == correct_value:
+                    score_list.append(1)
+                else:
+                    score_list.append(0)
+
+            print("End of testing ^_^")
+
+            score_array = np.asarray(score_list)
+
+            accuracy = score_array.sum() / score_array.size
+
+            temp_data_of_efficiency.append(accuracy)
+
+            epochs += 1
+
+        data_of_efficiency.append(temp_data_of_efficiency)
+
+    print(data_of_efficiency)
