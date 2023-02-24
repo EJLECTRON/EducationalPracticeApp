@@ -2,11 +2,12 @@ from PyQt5.QtGui import QPixmap, QImage
 from PyQt5.QtCore import pyqtSlot, Qt
 from PyQt5.QtWidgets import QMainWindow, QApplication
 from sys import argv, exit
+from cv2 import COLOR_BGR2RGB
 
 
 from ui_mainInterface import Ui_MainWindow
 from videoThread import *
-from imageProcessingModule import BrightnessCalculation
+from imageProcessingModule import *
 
 
 def numOfPorts():
@@ -16,7 +17,7 @@ def numOfPorts():
     dev_port = 0
 
     while is_working:
-        camera = cv2.VideoCapture(dev_port)
+        camera = VideoCapture(dev_port)
 
         if not camera.isOpened():
             is_working = False
@@ -52,7 +53,6 @@ class MainWindow(QMainWindow):
         self.cameraIndex = 1
 
         self.__createBrightnessCalculationProcess()
-        self.__labelsActions()
         self.__buttonsActions()
         self.__comboBoxActions()
 
@@ -74,9 +74,6 @@ class MainWindow(QMainWindow):
 
         for counter in range(numOfCameras):
             self.ui.areaComboBox.addItem("Камера {0}".format(counter + 1))
-
-    def __labelsActions(self):
-        pass
 
     def __selectCamera(self, index):
         """ Reinitialize camera """
@@ -106,7 +103,7 @@ class MainWindow(QMainWindow):
 
     def convert_cv_qt(self, frame):
         """Convert from an opencv image to QPixmap"""
-        rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rgb_image = cvtColor(frame, COLOR_BGR2RGB)
 
         h, w, ch = rgb_image.shape
         bytes_per_line = ch * w
