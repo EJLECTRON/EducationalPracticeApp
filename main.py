@@ -43,6 +43,8 @@ class MainWindow(QMainWindow):
 
         self.__functionallyInitialization()
 
+        self.thread = None
+
         #select defalt camera
         self.__selectCamera(self.cameraIndex)
 
@@ -75,20 +77,8 @@ class MainWindow(QMainWindow):
         for counter in range(numOfCameras):
             self.ui.areaComboBox.addItem("Камера {0}".format(counter + 1))
 
-    def __selectCamera(self, index):
-        """ Reinitialize camera """
-        # resize cameraLabel to needed size of video image
-        self.ui.cameraLabel.resize(self.camera_width, self.camera_height)
-
-        # create the video capture thread
-        self.thread = VideoThread(index)
-        # connect its signal to the update_image slot
-        self.thread.change_pixmap_signal.connect(self.update_image)
-        # start the thread
-        self.thread.start()
-
     @pyqtSlot(np.ndarray)
-    def update_image(self, frame):
+    def updateImage(self, frame):
         """Calculates brightness and updates the image_label with a new opencv image"""
 
         isLightNeeded = self.brightnessCalculation.findOutDayOrNight(frame)
@@ -98,10 +88,10 @@ class MainWindow(QMainWindow):
         else:
             self.ui.stateDynamicLabel.setText("Сигнал не подається")
 
-        qt_img = self.convert_cv_qt(frame)
+        qt_img = self.convertCvToQt(frame)
         self.ui.cameraLabel.setPixmap(qt_img)
 
-    def convert_cv_qt(self, frame):
+    def convertCvToQt(self, frame):
         """Convert from an opencv image to QPixmap"""
         rgb_image = cvtColor(frame, COLOR_BGR2RGB)
 
@@ -147,6 +137,22 @@ class MainWindow(QMainWindow):
             self.__selectCamera(self.ui.areaComboBox.currentIndex())
             self.cameraIndex = self.ui.areaComboBox.currentIndex()
             self.ui.cameraIndexLabel.setText("Камера {0}".format(self.cameraIndex + 1))
+
+    def __selectCamera(self, index):
+        """ Reinitialize camera """
+        # shut down capture system if available
+        if self.thread != None:
+            print("111")
+            self.thread.stop()
+        # resize cameraLabel to needed size of video image
+        self.ui.cameraLabel.resize(self.camera_width, self.camera_height)
+        # create the video capture thread
+        self.thread = VideoThread(index)
+        # connect its signal to the updateImage slot
+        self.thread.change_pixmap_signal.connect(self.updateImage)
+        # start the thread
+        self.thread.start()
+
 
     def __manualControlling(self):
         if self.isTypeOfSignalAutomatic:

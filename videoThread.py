@@ -1,6 +1,6 @@
 from PyQt5.QtCore import pyqtSignal, QThread
 import numpy as np
-from cv2 import VideoCapture
+from cv2 import VideoCapture, CAP_DSHOW
 
 class VideoThread(QThread):
     """ Class that handles camera thread"""
@@ -14,16 +14,21 @@ class VideoThread(QThread):
         #index of camera
         self.index = index
 
-    def run(self):
         # capture from selected camera
-        cap = VideoCapture(self.index)
+        self.cap = VideoCapture(self.index, CAP_DSHOW)
 
+    def run(self):
         #get and sent frame to app
         while self.run_flag:
-            self.ret, self.frame = cap.read()
+            self.ret, self.frame = self.cap.read()
 
             if self.ret:
                 self.change_pixmap_signal.emit(self.frame)
+            else:
+                self.run_flag = False
 
         # shut down capture system
         super().quit()
+
+    def stop(self):
+        self.run_flag = False
